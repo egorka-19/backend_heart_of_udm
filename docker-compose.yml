@@ -1,0 +1,15 @@
+# Только PostgreSQL — API запускается на машине: uvicorn (см. README)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: technostrelka
+    ports:
+      - "5432:5432"
+    volumes:
+      - technostrelka_pgdata:/var/lib/postgresql/data
+
+volumes:
+  technostrelka_pgdata:

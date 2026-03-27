@@ -1,0 +1,607 @@
+openapi: 3.0.3
+info:
+  title: Technostrelka API
+  version: 1.0.0
+  description: |
+    Client-server API for Technostrelka Android app (FastAPI + JWT + PostgreSQL).
+servers:
+  - url: /api/v1
+paths:
+  /auth/register:
+    post:
+      summary: Register
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+  /auth/login:
+    post:
+      summary: Login
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+  /auth/logout:
+    post:
+      summary: Logout (client discards tokens)
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204':
+          description: No Content
+  /auth/me:
+    get:
+      summary: Current user (same as users/me)
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMeOut'
+  /users/me:
+    get:
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMeOut'
+    patch:
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPatchRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMeOut'
+  /users/me/avatar:
+    post:
+      tags: [Users]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMeOut'
+  /event-categories:
+    get:
+      tags: [Events]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventCategoryOut'
+  /events:
+    get:
+      tags: [Events]
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: favorite_only
+          in: query
+          schema: { type: boolean }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: page_size
+          in: query
+          schema: { type: integer, default: 50 }
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventListOut'
+  /events/{event_id}:
+    get:
+      tags: [Events]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventOut'
+  /events/{event_id}/rating:
+    get:
+      tags: [Events]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatingOut'
+  /events/{event_id}/gallery:
+    get:
+      tags: [Events]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GalleryOut'
+  /events/{event_id}/reviews:
+    get:
+      tags: [Reviews]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewOut'
+  /events/{event_id}/reviews/me:
+    put:
+      tags: [Reviews]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewUpsertRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewOut'
+    delete:
+      tags: [Reviews]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content
+  /events/{event_id}/reviews/me/photos:
+    post:
+      tags: [Reviews]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewOut'
+  /review-photos/{photo_id}:
+    delete:
+      tags: [Reviews]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: photo_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content
+  /favorites:
+    get:
+      tags: [Favorites]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FavoriteEventOut'
+  /favorites/{event_id}:
+    put:
+      tags: [Favorites]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content
+    delete:
+      tags: [Favorites]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content
+  /routes:
+    get:
+      tags: [Routes]
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: goal
+          in: query
+          schema: { type: string }
+        - name: days_range
+          in: query
+          schema: { type: string }
+        - name: people_count
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RouteOut'
+  /routes/{route_id}:
+    get:
+      tags: [Routes]
+      parameters:
+        - name: route_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteDetailOut'
+  /routes/recommended/me:
+    get:
+      tags: [Routes]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteOut'
+  /chat/classify-interest:
+    post:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatClassifyRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatClassifyResponse'
+  /chat/sessions:
+    post:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionOut'
+  /chat/sessions/{session_id}/messages:
+    get:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessageOut'
+    post:
+      tags: [Chat]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageOut'
+  /health:
+    get:
+      tags: [Observability]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, username]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        username: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token: { type: string }
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        token_type: { type: string, default: bearer }
+        expires_in: { type: integer }
+    UserMeOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        username: { type: string }
+        avatar_url: { type: string, nullable: true }
+        category_user: { type: string, nullable: true }
+    UserPatchRequest:
+      type: object
+      properties:
+        username: { type: string }
+        category_user: { type: string }
+    EventCategoryOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        type: { type: string }
+        sort_order: { type: integer }
+    EventOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        legacy_name: { type: string, nullable: true }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        img_url: { type: string, nullable: true }
+        type: { type: string, nullable: true }
+        age: { type: string, nullable: true }
+        data: { type: string, nullable: true }
+        place: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+        schedule: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        rating_avg: { type: number, format: float }
+        review_count: { type: integer }
+        is_favorite: { type: boolean }
+    EventListOut:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventOut'
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+    RatingOut:
+      type: object
+      properties:
+        average: { type: number, format: float }
+        count: { type: integer }
+    GalleryOut:
+      type: object
+      properties:
+        urls:
+          type: array
+          items: { type: string }
+    ReviewOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        user_name: { type: string }
+        avatar_url: { type: string, nullable: true }
+        rating: { type: integer }
+        text: { type: string }
+        date: { type: string }
+        photo_urls:
+          type: array
+          items: { type: string }
+    ReviewUpsertRequest:
+      type: object
+      required: [rating, text]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        text: { type: string }
+    FavoriteEventOut:
+      type: object
+      properties:
+        event: { $ref: '#/components/schemas/EventOut' }
+    RouteOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        image_url: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        goal: { type: string, nullable: true }
+        days_range: { type: string, nullable: true }
+        people_count: { type: string, nullable: true }
+        duration: { type: string, nullable: true }
+        difficulty: { type: string, nullable: true }
+    RouteDetailOut:
+      allOf:
+        - $ref: '#/components/schemas/RouteOut'
+        - type: object
+          properties:
+            event_ids:
+              type: array
+              items: { type: string, format: uuid }
+    ChatClassifyRequest:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              role: { type: string }
+              content: { type: string }
+    ChatClassifyResponse:
+      type: object
+      properties:
+        category_user: { type: string }
+    ChatSessionOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+    ChatMessageOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+    ChatMessageCreate:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
