@@ -17,6 +17,14 @@ git remote add origin https://github.com/ВАШ_ЛОГИН/technostrelka-api.git
 git push -u origin main
 ```
 
+Если установлен [GitHub CLI](https://cli.github.com/) (`gh auth login` уже выполнен), из папки `backend` можно одной командой создать репозиторий и запушить:
+
+```bash
+gh repo create technostrelka-api --private --source=. --remote=origin --push
+```
+
+(Замените `technostrelka-api` и `--private` / `--public` по желанию.)
+
 После `git add` в репозиторий **не попадут** `.venv/`, `.env` и папка `uploads/` — они перечислены в `.gitignore`. Секреты храните только локально; на сервере задайте переменные окружения или свой `.env`.
 
 **Android-проект:** укажите URL нового API в `local.properties` (`api.base.url=...`) или в `build.gradle`, как в README ниже.
